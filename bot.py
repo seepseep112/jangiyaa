@@ -6,6 +6,7 @@ import os
 # Initialize bot with intents to track voice states
 intents = discord.Intents.default()
 intents.voice_states = True
+intents.message_content = True  # Add this exact line here!
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Dictionary to keep track of when users join a voice channel
