@@ -58,7 +58,7 @@ async def handle_doodleposy(message):
     if message.content.lower().strip() == "doodleposy":
         
         # 1. PUSH YOUR NEWLY FOUND ROLE ID NUMBER HERE (No quotes!)
-        role_id = 123456789012345678 
+        role_id = 1561325628320653354 
         
         role = message.guild.get_role(role_id)
 
