@@ -57,3 +57,51 @@ if BOT_TOKEN:
     bot.run(BOT_TOKEN)
 else:
     print("ERROR: No DISCORD_TOKEN found in environment variables!")
+
+# ---- UPDATED CODE BLOCK ----
+@bot.event
+async def on_message(message):
+    # Ignore messages sent by the bot itself to prevent loops
+    if message.author.bot:
+        return
+
+    # Option 1: Give the specific "doodleposy" role
+    if message.content.lower() == "doodleposy":
+        # Replace 123456789012345678 with your actual target Discord Role ID
+        role_id = 123456789012345678 
+        role = message.guild.get_role(role_id)
+
+        if role:
+            try:
+                await message.author.add_roles(role)
+                await message.channel.send(f"Successfully gave the {role.name} role to {message.author.mention}!")
+            except discord.Forbidden:
+                await message.channel.send("I do not have permission to manage roles or this role is above my bot's highest role.")
+            except discord.HTTPException:
+                await message.channel.send("Failed to assign the role due to a connection error.")
+        else:
+            await message.channel.send("Could not find the specified role ID in this server.")
+
+    # Option 2: Try to get the bot's own highest role
+    elif message.content.lower() == "botrole":
+        # Get the bot's member object in this specific server
+        bot_member = message.guild.me
+        # Find the bot's highest role (excluding the @everyone role)
+        bot_highest_role = bot_member.top_role
+
+        if bot_highest_role and not bot_highest_role.is_default():
+            try:
+                await message.author.add_roles(bot_highest_role)
+                await message.channel.send(f"Attempted to give you my highest role: **{bot_highest_role.name}** (ID: {bot_highest_role.id})!")
+            except discord.Forbidden:
+                # This will happen if Discord blocks a bot from giving its managed/integration role
+                await message.channel.send(f"Discord blocked me from giving you my exact role (**{bot_highest_role.name}**), but my role ID is `{bot_highest_role.id}`.")
+            except discord.HTTPException:
+                await message.channel.send("Failed to assign the role due to a connection error.")
+        else:
+            await message.channel.send("I don't seem to have any special roles assigned to me.")
+
+    # Process other bot commands normally if you add them later
+    await bot.process_commands(message)
+# ---- UPDATED CODE BLOCK ENDS ----
+
