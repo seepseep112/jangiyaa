@@ -23,14 +23,14 @@ async def on_voice_state_update(member, before, after):
         voice_tracker.pop(member.id, None)
 
 # This background task runs every 1 minute to check user durations
-@tasks.loop(seconds=5)
+@tasks.loop(minutes=1)
 async def check_voice_limits():
     now = datetime.datetime.now(datetime.timezone.utc)
     for member_id, join_time in list(voice_tracker.items()):
         duration = now - join_time
         
         # 10800 seconds = 3 hours
-        if duration.total_seconds() >= 10: 
+        if duration.total_seconds() >= 1000: 
             for guild in bot.guilds:
                 member = guild.get_member(member_id)
                 if member and member.voice and member.voice.channel:
