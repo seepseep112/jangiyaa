@@ -23,7 +23,7 @@ async def on_voice_state_update(member, before, after):
         voice_tracker.pop(member.id, None)
 
 # This background task runs every 1 minute to check user durations
-@tasks.loop(minutes=1)
+@tasks.loop(seconds=5)
 async def check_voice_limits():
     now = datetime.datetime.now(datetime.timezone.utc)
     for member_id, join_time in list(voice_tracker.items()):
