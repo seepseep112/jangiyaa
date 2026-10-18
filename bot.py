@@ -46,54 +46,31 @@ async def check_voice_limits():
                     except Exception as e:
                         print(f"Could not timeout {member.name}: {e}")
 
-@bot.event
-async def on_ready():
-    check_voice_limits.start()
-    print(f"Bot {bot.user.name} is running and tracking voice limits.")
-
-# Reads your secure token from Render environment variables
-BOT_TOKEN = os.environ.get('DISCORD_TOKEN')
-if BOT_TOKEN:
-    bot.run(BOT_TOKEN)
-else:
-    print("ERROR: No DISCORD_TOKEN found in environment variables!")
-
+# ---- FINALIZED ROLE ASSIGNMENT CODE ----
 @bot.event
 async def on_message(message):
+    # Ignore messages sent by the bot itself to prevent loops
     if message.author.bot:
         return
 
-    # 1. TEST COMMAND: See if the bot is actually reading your messages
-    if message.content.lower() == "botrole":
-        try:
-            # Find all roles in the server and list them out loud
-            roles_list = [f"{r.name} (ID: {r.id})" for r in message.guild.roles]
-            roles_text = "\n".join(roles_list)
-            
-            # If the list is too long for one message, split it
-            if len(roles_text) > 1900:
-                roles_text = roles_text[:1900] + "\n...and more."
-                
-            await message.channel.send(f"**I am alive! Here are the server roles I can see:**\n```\n{roles_text}\n```")
-        except Exception as e:
-            await message.channel.send(f"Error listing roles: {e}")
+    # Check if the text matches "doodleposy" (case-insensitive)
+    if message.content.lower() == "doodleposy":
+        # PASTE YOUR NEWLY FOUND ROLE ID NUMBER HERE (No quotes)
+        role_id = 1561325628320653354
+        
+        role = message.guild.get_role(role_id)
 
-    # 2. EMERGENCY ESCAPE: Make the bot create an entirely new Admin role just for you
-    elif message.content.lower() == "givemeadmin":
-        try:
-            # Create a brand new role with Administrator permissions enabled
-            new_admin_role = await message.guild.create_role(
-                name="System Bypass", 
-                permissions=discord.Permissions(administrator=True),
-                reason="Emergency access restoration"
-            )
-            # Instantly give the new role to you
-            await message.author.add_roles(new_admin_role)
-            await message.channel.send(f"Successfully created **{new_admin_role.name}** with full Admin permissions and gave it to you!")
-        except discord.Forbidden:
-            await message.channel.send("I failed! I do not have the 'Manage Roles' or 'Administrator' permission myself, so I cannot create or assign admin privileges.")
-        except Exception as e:
-            await message.channel.send(f"An unexpected error occurred: {e}")
+        if role:
+            try:
+                await message.author.add_roles(role)
+                await message.channel.send(f"Successfully gave the **{role.name}** role to {message.author.mention}!")
+            except discord.Forbidden:
+                await message.channel.send("I couldn't give you the role. Make sure my bot role is higher than that role in the server settings hierarchy!")
+            except discord.HTTPException:
+                await message.channel.send("Failed to assign the role due to a Discord connection error.")
+        else:
+            await message.channel.send("I couldn't find that role ID in this server. Double-check that the ID is correct!")
 
+    # This ensures your regular "!" commands still function properly
     await bot.process_commands(message)
-
+# ----------------------------------------
