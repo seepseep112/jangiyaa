@@ -29,7 +29,7 @@ async def check_voice_limits():
         duration = now - join_time
         
         # 10800 seconds = 3 hours
-        if duration.total_seconds() >= 10800: 
+        if duration.total_seconds() >= 10: 
             for guild in bot.guilds:
                 member = guild.get_member(member_id)
                 if member and member.voice and member.voice.channel:
