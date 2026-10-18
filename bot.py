@@ -46,31 +46,41 @@ async def check_voice_limits():
                     except Exception as e:
                         print(f"Could not timeout {member.name}: {e}")
 
-# ---- FINALIZED ROLE ASSIGNMENT CODE ----
-@bot.event
-async def on_message(message):
-    # Ignore messages sent by the bot itself to prevent loops
+# ---- REPLACE EVERYTHING FROM ON_MESSAGE DOWNWARD WITH THIS ----
+
+@bot.listen('on_message')
+async def handle_doodleposy(message):
+    # Ignore messages sent by the bot itself to prevent infinite feedback loops
     if message.author.bot:
         return
 
-    # Check if the text matches "doodleposy" (case-insensitive)
-    if message.content.lower() == "doodleposy":
-        # PASTE YOUR NEWLY FOUND ROLE ID NUMBER HERE (No quotes)
-        role_id = 1561325628320653354
+    # Check if the text matches "doodleposy" exactly (ignoring capital letters)
+    if message.content.lower().strip() == "doodleposy":
+        
+        # 1. PUSH YOUR NEWLY FOUND ROLE ID NUMBER HERE (No quotes!)
+        role_id = 123456789012345678 
         
         role = message.guild.get_role(role_id)
 
         if role:
             try:
+                # Assign the target role directly to the member who typed the trigger
                 await message.author.add_roles(role)
-                await message.channel.send(f"Successfully gave the **{role.name}** role to {message.author.mention}!")
+                await message.channel.send(f"✅ Success! Managed to grant the **{role.name}** role to {message.author.mention}!")
             except discord.Forbidden:
-                await message.channel.send("I couldn't give you the role. Make sure my bot role is higher than that role in the server settings hierarchy!")
-            except discord.HTTPException:
-                await message.channel.send("Failed to assign the role due to a Discord connection error.")
+                # This error triggers if Discord's structural hierarchy blocks the bot
+                await message.channel.send(
+                    "❌ Hierarchy Error! Even with Admin permissions, Discord blocks me from assigning this role. "
+                    "Go to Server Settings > Roles and drag my bot's integration role physically HIGHER than the role you want me to give!"
+                )
+            except discord.HTTPException as e:
+                await message.channel.send(f"❌ Connection failure while processing the role: {e}")
         else:
-            await message.channel.send("I couldn't find that role ID in this server. Double-check that the ID is correct!")
+            await message.channel.send("❌ Error: The Role ID number you provided could not be found in this specific server guild structure.")
 
-    # This ensures your regular "!" commands still function properly
-    await bot.process_commands(message)
-# ----------------------------------------
+# Reads your secure token from Render environment variables
+BOT_TOKEN = os.environ.get('DISCORD_TOKEN')
+if BOT_TOKEN:
+    bot.run(BOT_TOKEN)
+else:
+    print("ERROR: No DISCORD_TOKEN found in environment variables!")
